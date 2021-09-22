@@ -9,16 +9,19 @@ import PIL.Image
 
 def stderr(string):
     subprocess.call(["notify-send", "Error", string])
-    print >> sys.stderr, string
-
-if len(sys.argv) != 2:
-    stderr('Usage:')
-    sys.exit(1)
-
+    sys.stderr.write(f"{string}\n")
 
 def gmaps_url(lat, lon):
-    zoom = 15
-    return str('https://maps.google.com/maps?ll=%f,%f&q=%f,%f&hl=en&t=h&z=%dd' % (lat, lon, lat, lon, zoom))
+    z = 15
+    return f"https://maps.google.com/maps?ll={lat},{lon}&q={lat},{lon}&hl=en&t=h&z={z}"
+
+def wiki_url(lat, lon):
+    z = 15
+    return f"http://wikimapia.org/#lat={lat}&lon={lon}&z={z}"
+
+def yandex_url(lat, lon):
+    z = 12
+    return f'https://yandex.ru/maps/?ll={lon}%2C{lat}&mode=whatshere&whatshere%5Bpoint%5D={lon}%2C{lat}&whatshere%5Bzoom%5D={z}&z={z}'
 
 def coords(exif):
     latHmspr = None
@@ -29,13 +32,9 @@ def coords(exif):
     try:
         gpsData = exif[34853]
         latHmspr = gpsData[1]
-    #    print("latHmspr = %s" % latHmspr)
         latData = gpsData[2]
-    #    print("latData = %s" % latData)
         lonHmspr = gpsData[3]
-    #    print("lonHmspr = %s" % lonHmspr)
         lonData = gpsData[4]
-    #    print("lonData = %s" % lonData)
     except KeyError:
         raise Exception('No GPS data in EXIF')
 
@@ -54,23 +53,39 @@ def coords(exif):
     return lat, lon
 
 def main():
-    filename = sys.argv[1]
+    parser = argparse.ArgumentParser(description='Show image on maps')
+    group = parser.add_mutually_exclusive_group(required=True)
+    group.add_argument('-g', '--google',    action='store_true',
+            help='Google maps')
+    group.add_argument('-w', '--wikimapia', action='store_true',
+            help='Wikimapia')
+    group.add_argument('-y', '--yandex',    action='store_true',
+            help='Yandex maps')
+    parser.add_argument('filename', help='Image file path')
+    args = parser.parse_args()
+
+
+    filename = args.filename
 
     img = None
     try:
         img = PIL.Image.open(filename)
     except IOError:
-        raise Exception('Can\'t open file \'%s\'' % filename)
+        raise Exception(f"Can't open file {filename}")
         
     exif = img._getexif()
     lat, lon = coords(exif)
-    webbrowser.open(gmaps_url(lat, lon))
-
+    url = gmaps_url(lat, lon) if args.google\
+            else wiki_url(lat, lon) if args.wikimapia\
+            else yandex_url(lat, lon)
+    print(url)
+    webbrowser.open(url)
+    return 0
 
 if __name__== "__main__":
     try:
         sys.exit(main())
-    except Exception:
-        stderr('Can\'t open file \'%s\'' % filename)
+    except Exception as e:
+        stderr(str(e))
         sys.exit(1)
 

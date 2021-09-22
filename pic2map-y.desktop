@@ -1,10 +1,10 @@
 [Desktop Entry]
-Name[ru]=Показать изображение на картах гугл
-Name=Show picture on google maps
-Comment[ru]=Показать изображение на картах гугл
-Comment=Show picture on google maps
+Name[ru]=Показать изображение на картах яндекс
+Name=Show picture on yandex maps
+Comment[ru]=Показать изображение на картах яндекс
+Comment=Show picture on yandex maps
 TryExec=pic2map
-Exec=pic2map -g %f
+Exec=pic2map -y %f
 # TRANSLATORS: Do NOT translate or transliterate this text!
 # This is an icon file name
 Icon[ru]=eog
