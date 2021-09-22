@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 
+import argparse
 import webbrowser
 import subprocess
 import sys
@@ -14,51 +15,62 @@ if len(sys.argv) != 2:
     stderr('Usage:')
     sys.exit(1)
 
-filename = sys.argv[1]
 
-img = None
-try:
-    img = PIL.Image.open(filename)
-except IOError:
-    stderr('Can\'t open file \'%s\'' % filename)
-    sys.exit(1)
+def gmaps_url(lat, lon):
+    zoom = 15
+    return str('https://maps.google.com/maps?ll=%f,%f&q=%f,%f&hl=en&t=h&z=%dd' % (lat, lon, lat, lon, zoom))
 
-exif = img._getexif()
+def coords(exif):
+    latHmspr = None
+    latData = None
+    lonHmspr = None
+    lonData = None
 
-latHmspr = None
-latData = None
-lonHmspr = None
-lonData = None
+    try:
+        gpsData = exif[34853]
+        latHmspr = gpsData[1]
+    #    print("latHmspr = %s" % latHmspr)
+        latData = gpsData[2]
+    #    print("latData = %s" % latData)
+        lonHmspr = gpsData[3]
+    #    print("lonHmspr = %s" % lonHmspr)
+        lonData = gpsData[4]
+    #    print("lonData = %s" % lonData)
+    except KeyError:
+        raise Exception('No GPS data in EXIF')
 
-try:
-    gpsData = exif[34853]
-    latHmspr = gpsData[1]
-#    print("latHmspr = %s" % latHmspr)
-    latData = gpsData[2]
-#    print("latData = %s" % latData)
-    lonHmspr = gpsData[3]
-#    print("lonHmspr = %s" % lonHmspr)
-    lonData = gpsData[4]
-#    print("lonData = %s" % lonData)
-except KeyError:
-    stderr('No GPS data in EXIF')
-    sys.exit(0)
+    latSign = 1 if latHmspr == 'N' else -1
+    latDeg = latData[0][0] / float(latData[0][1])
+    latMin = latData[1][0] / float(latData[1][1])
+    latSec = latData[2][0] / float(latData[2][1])
+    lat = latSign * (latDeg + (latMin + latSec / 60) / 60)
 
-latSign = 1 if latHmspr == 'N' else -1
-latDeg = latData[0][0] / float(latData[0][1])
-latMin = latData[1][0] / float(latData[1][1])
-latSec = latData[2][0] / float(latData[2][1])
-lat = latSign * (latDeg + (latMin + latSec / 60) / 60)
+    lonSign = 1 if lonHmspr == 'E' else -1
+    lonDeg = lonData[0][0] / float(lonData[0][1])
+    lonMin = lonData[1][0] / float(lonData[1][1])
+    lonSec = lonData[2][0] / float(lonData[2][1])
+    lon = lonSign * (lonDeg + (lonMin + lonSec / 60) / 60)
 
-lonSign = 1 if lonHmspr == 'E' else -1
-lonDeg = lonData[0][0] / float(lonData[0][1])
-lonMin = lonData[1][0] / float(lonData[1][1])
-lonSec = lonData[2][0] / float(lonData[2][1])
-lon = lonSign * (lonDeg + (lonMin + lonSec / 60) / 60)
+    return lat, lon
 
-zoom = 15
+def main():
+    filename = sys.argv[1]
 
-url = str('https://maps.google.com/maps?ll=%f,%f&q=%f,%f&hl=en&t=h&z=%dd' % (lat, lon, lat, lon, zoom))
-webbrowser.open(url)
+    img = None
+    try:
+        img = PIL.Image.open(filename)
+    except IOError:
+        raise Exception('Can\'t open file \'%s\'' % filename)
+        
+    exif = img._getexif()
+    lat, lon = coords(exif)
+    webbrowser.open(gmaps_url(lat, lon))
 
+
+if __name__== "__main__":
+    try:
+        sys.exit(main())
+    except Exception:
+        stderr('Can\'t open file \'%s\'' % filename)
+        sys.exit(1)
 
