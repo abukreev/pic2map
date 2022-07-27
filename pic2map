@@ -39,15 +39,15 @@ def coords(exif):
         raise Exception('No GPS data in EXIF')
 
     latSign = 1 if latHmspr == 'N' else -1
-    latDeg = latData[0][0] / float(latData[0][1])
-    latMin = latData[1][0] / float(latData[1][1])
-    latSec = latData[2][0] / float(latData[2][1])
+    latDeg = float(latData[0])
+    latMin = float(latData[1])
+    latSec = float(latData[2])
     lat = latSign * (latDeg + (latMin + latSec / 60) / 60)
 
     lonSign = 1 if lonHmspr == 'E' else -1
-    lonDeg = lonData[0][0] / float(lonData[0][1])
-    lonMin = lonData[1][0] / float(lonData[1][1])
-    lonSec = lonData[2][0] / float(lonData[2][1])
+    lonDeg = float(lonData[0])
+    lonMin = float(lonData[1])
+    lonSec = float(lonData[2])
     lon = lonSign * (lonDeg + (lonMin + lonSec / 60) / 60)
 
     return lat, lon
